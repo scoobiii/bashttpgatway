@@ -1,0 +1,105 @@
+version: '3.9'
+
+services:
+  api1: &api
+    # Build context remains the same, but we won't use the Dockerfile build directly for the API
+    # Instead, we mount the pre-compiled BHG server and the scripts
+    image: ubuntu:22.04 # Use a base image with bash
+    container_name: api1
+    # Use host network for potentially lower latency
+    network_mode: host
+    depends_on:
+      - postgres
+      - pgbouncer
+    volumes:
+      # Mount the code directory containing the BHG server and scripts
+      - ./code:/app
+      # Mount tmpfs for batch files to use RAM
+      - type: tmpfs
+        target: /tmp
+    # Command to run the pre-compiled BHG server, passing the port
+    command: /app/bhg_server 8081
+    working_dir: /app # Set working directory so handler_bhg.bash can find other scripts
+    deploy:
+      resources:
+        limits:
+          # Adjusted resource limits (Total 1.5 CPU / 2.7 GB RAM)
+          cpus: '0.2'
+          memory: '0.4GB'
+    # Add necessary capabilities if needed, e.g., for network operations
+    # cap_add:
+    #   - NET_ADMIN
+    #   - NET_RAW
+
+  api2:
+    <<: *api
+    container_name: api2
+    command: /app/bhg_server 8082 # Assign a different port for this instance
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: '0.4GB'
+
+  postgres:
+    image: postgres
+    container_name: postgres
+    # Use host network; Postgres will listen on host's 5432
+    network_mode: host
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    volumes:
+      - ./code/init.sql:/docker-entrypoint-initdb.d/init.sql
+      # Optional: Mount a custom postgresql.conf for tuning
+      # - ./code/postgresql.conf:/etc/postgresql/postgresql.conf
+    # command: postgres -c config_file=/etc/postgresql/postgresql.conf # Uncomment if using custom config
+    deploy:
+      resources:
+        limits:
+          # Give more resources to Postgres
+          cpus: '0.9'
+          memory: '1.5GB'
+
+  pgbouncer:
+    image: pgbouncer/pgbouncer
+    container_name: pgbouncer
+    # Use host network; PgBouncer will listen on host's 6432 (default)
+    network_mode: host
+    environment:
+      # Connect to Postgres via localhost since both are on host network
+      - DATABASES_HOST=127.0.0.1
+      - DATABASES_PORT=5432
+      - DATABASES_USER=postgres
+      - DATABASES_PASSWORD=postgres # Or remove if using trust auth
+      - DATABASES_DBNAME=postgres
+      # Reduced pool sizes based on Akita's tuning principles
+      - DATABASES_POOL_SIZE=30
+      - PGBOUNCER_MAX_CLIENT_CONN=60
+      - PGBOUNCER_RESERVE_POOL_SIZE=5
+      - PGBOUNCER_DEFAULT_POOL_SIZE=30
+      - PGBOUNCER_LISTEN_ADDR=0.0.0.0
+      - PGBOUNCER_LISTEN_PORT=6432
+    depends_on:
+      - postgres
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: '0.2GB'
+
+  nginx:
+    image: nginx
+    container_name: nginx
+    # Use host network; Nginx will listen on host's 9999
+    network_mode: host
+    volumes:
+      - ./code/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api1
+      - api2
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: '0.2GB'
+

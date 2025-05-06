@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rinha de Backend 2023: Bash Rumo ao Olimpo com Gateway Nativo!</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 960px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        pre {
+            background: #eee;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: monospace;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .section {
+            margin-bottom: 30px; /* Increased spacing */
+            padding-bottom: 20px; /* Add padding below sections */
+            border-bottom: 1px solid #eee; /* Add separator line */
+        }
+        .section:last-child {
+            border-bottom: none; /* Remove border for the last section */
+        }
+        .code-link {
+             display: inline-block;
+             background-color: #e7e7e7;
+             color: black;
+             padding: 8px 15px;
+             text-align: center;
+             text-decoration: none;
+             border-radius: 4px;
+             margin-top: 10px;
+             margin-right: 5px; /* Add spacing between links */
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Rinha de Backend 2023: Bash Rumo ao Olimpo com Gateway Nativo!</h1>
+
+        <div class="section">
+            <h2>Introdução: A Saga Continua!</h2>
+            <p>Bem-vindo à evolução da jornada épica da implementação Bash de <a href="https://github.com/leandronsp" target="_blank">Leandro Proença (leandronsp)</a> na Rinha de Backend 2023 Q3! Após otimizações iniciais inspiradas por <a href="https://www.akitaonrails.com/" target="_blank">Fabio Akita</a>, que tiraram o projeto das últimas posições, miramos ainda mais alto: o Olimpo da Performance, o Top 5! Para isso, identificamos a necessidade de uma solução mais radical: um <strong>Gateway HTTP Nativo</strong> para superar as limitações inerentes do Bash no tratamento de requisições web. Acompanhe nossa análise, proposta arquitetural e a implementação do protótipo do <strong>Bash HTTP Gateway (BHG)</strong>!</p>
+            <p>A Rinha de Backend foi um desafio focado em performance e resiliência, exigindo que as APIs suportassem alta carga com recursos limitados.</p>
+        </div>
+
+        <div class="section">
+            <h2>O Ponto de Partida: Bash Otimizado</h2>
+            <p>A implementação original de Leandro (<a href="https://github.com/leandronsp/rinha-backend-bash" target="_blank">Repositório Original</a>) usava Bash, <code>netcat</code>, Nginx, PgBouncer e PostgreSQL. Nossas otimizações iniciais focaram em:</p>
+            <ul>
+                <li>Batch Insert com <code>COPY FROM STDIN</code></li>
+                <li><code>network_mode: host</code> no Docker</li>
+                <li>Tuning de Nginx, PgBouncer e PostgreSQL</li>
+            </ul>
+            <p>Essas melhorias, detalhadas nos documentos abaixo, foram cruciais, mas insuficientes para o Top 5.</p>
+            <p><a href="propostas_otimizacao_bash.md" class="code-link">Propostas Iniciais</a>
+               <a href="akita_otimizacoes.md" class="code-link">Análise Akita</a>
+               <a href="code/" class="code-link">Código (Otimização Inicial)</a>
+            </p>
+        </div>
+
+        <div class="section">
+            <h2>Rumo ao Top 5: A Necessidade de uma Solução Nativa</h2>
+            <p>A análise de performance indicou que, mesmo com as otimizações, o gargalo principal permanecia no servidor HTTP baseado em <code>netcat</code> e na execução interpretada do Bash para cada requisição. Para competir com soluções em Rust, Go, C++, etc., era preciso eliminar esse overhead.</p>
+            <p><a href="estimativa_performance.md" class="code-link">Estimativa de Performance</a></p>
+        </div>
+
+        <div class="section">
+            <h2>Inspiração: Lean4 e os Top 5</h2>
+            <p>Analisamos como outras linguagens, incluindo o surpreendente Lean4, alcançaram o topo. O padrão era claro: uso de servidores HTTP eficientes e nativos da linguagem, I/O assíncrono e minimização de processos externos.</p>
+            <p><a href="analise_solucoes_nativas.md" class="code-link">Análise de Soluções Nativas</a></p>
+        </div>
+
+        <div class="section">
+            <h2>Proposta Arquitetural: Bash HTTP Gateway (BHG)</h2>
+            <p>Propusemos uma arquitetura híbrida: um gateway HTTP leve e concorrente escrito em Go (ou C), chamado BHG, que recebe as requisições e invoca scripts Bash para a lógica de negócio, passando dados via variáveis de ambiente e stdin/stdout. Isso combina a performance de um servidor nativo com a manutenção da lógica em Bash.</p>
+            <p><a href="arquitetura_nativa_bash.md" class="code-link">Detalhes da Arquitetura BHG</a></p>
+        </div>
+
+        <div class="section">
+            <h2>Protótipo BHG (Go + Bash)</h2>
+            <p>Implementamos um protótipo funcional do BHG em Go. Ele escuta requisições HTTP, passa os dados para um script <code>handler_bhg.bash</code> adaptado e retorna a resposta gerada pelo Bash.</p>
+            <ul>
+                <li>O BHG lida com conexões concorrentes.</li>
+                <li>O Bash foca apenas na lógica e na formatação da resposta HTTP completa.</li>
+                <li>O Docker Compose foi atualizado para usar o BHG no lugar do <code>netcat</code>.</li>
+            </ul>
+            <p>Explore o código do protótipo:</p>
+            <p><a href="code/bhg_server" class="code-link">Binário BHG (Go)</a>
+               <a href="bhg_go/bhg.go" class="code-link">Código Fonte BHG (Go)</a>
+               <a href="code/handler_bhg.bash" class="code-link">Handler Bash Adaptado</a>
+               <a href="code/docker-compose.yml" class="code-link">Docker Compose Atualizado</a>
+            </p>
+            <p><em>Nota: Este é um protótipo inicial. Testes de carga formais são necessários para quantificar o ganho de performance.</em></p>
+        </div>
+
+        <div class="section">
+            <h2>Próximos Passos</h2>
+            <ul>
+                <li>Realizar testes de carga (Gatling) para comparar a performance do BHG com a versão anterior e com os benchmarks da Rinha.</li>
+                <li>Refinar a implementação do BHG e do handler Bash com base nos testes.</li>
+                <li>Criar um repositório GitHub público para o projeto.</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Autoria e Colaboração</h2>
+            <p>Este trabalho de análise, otimização e prototipagem foi realizado por:</p>
+            <ul>
+                <li><strong>Zeh Sobrinho</strong></li>
+                <li><strong>Iag Full Stack Senior DevOp (Manus AI)</strong></li>
+            </ul>
+            <p>Data: 06 de Maio de 2025</p>
+            <p><a href="todo.md" class="code-link">Checklist do Projeto</a></p>
+        </div>
+
+    </div>
+</body>
+</html>
+
