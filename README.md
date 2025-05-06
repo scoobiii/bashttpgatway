@@ -15,14 +15,14 @@ Este repositório documenta a jornada de otimização da implementação Bash de
 
 ```mermaid
 graph LR
-    Client[Cliente HTTP] -- :9999 --> Nginx;
-    Nginx -- :8081/:8082 --> BHG[Bash HTTP Gateway (Go)];
-    BHG -- Invoca Script + Dados --> BashHandler[handler_bhg.bash];
-    BashHandler -- Lógica + Consulta --> PgBouncer[:6432];
-    PgBouncer -- Pool --> Postgres[:5432];
+    Client["Cliente HTTP"] -- :9999 --> Nginx;
+    Nginx -- :8081/:8082 --> BHG["Bash HTTP Gateway (Go)"];
+    BHG -- "Invoca Script + Dados" --> BashHandler["handler_bhg.bash"];
+    BashHandler -- "Lógica + Consulta" --> PgBouncer[":6432"];
+    PgBouncer -- Pool --> Postgres[":5432"];
     Postgres -- Resultado --> PgBouncer;
     PgBouncer -- Resultado --> BashHandler;
-    BashHandler -- Resposta HTTP --> BHG;
+    BashHandler -- "Resposta HTTP" --> BHG;
     BHG -- Resposta --> Nginx;
     Nginx -- Resposta --> Client;
 ```
